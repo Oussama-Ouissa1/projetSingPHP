@@ -1,12 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['fullName'])) {
-    header("Location: index.php");
-    exit;
-}
 
-$fullName = $_SESSION['fullName'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,6 +11,6 @@ $fullName = $_SESSION['fullName'];
     <title>Welcome</title>
 </head>
 <body>
-    <h1>Welcome, <?php echo htmlspecialchars($fullName); ?>!</h1>
+    
 </body>
 </html>

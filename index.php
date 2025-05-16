@@ -16,9 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && password_verify($password, $user['password'])) {
         // Connexion réussie
         session_start();
+        
+        
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['fullName'] = $user['fullName'];
-        header("Location: dashboard.php"); // redirige vers une page protégée
+        header("Location: welcome.php"); // redirige vers une page protégée
         exit;
     } else {
         $message = "<p class='text-red-500 text-center'>Email ou mot de passe incorrect.</p>";
