@@ -2,93 +2,109 @@
 session_start();
 include "conn.php";
 
-
-if (!isset($_SESSION['fullName'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
-    exit;
+    exit();
 }
 
+$user_id = $_SESSION['user_id'];
 
-$fullName = $_SESSION['fullName'];
-
-// Remplacer cette ligne par $_SESSION['user_id'] si authentification réelle
-$userId = $_SESSION['user_id'] ?? 1;
-
-// Ajouter une tâche
-if (isset($_POST['add'])) {
+if (isset($_POST['add_task'])) {
     $description = $_POST['description'];
-    $stmt = $conn->prepare("INSERT INTO tasks (description, user_id) VALUES (?, ?)");
-    $stmt->execute([$description, $userId]);
+    $color = $_POST['color'];
+    $sql = "INSERT INTO tasks (description, user_id, color) VALUES (:description, :user_id, :color)";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['description' => $description, 'user_id' => $user_id, 'color' => $color]);
+    header("Location: welcome.php");
+    exit();
 }
 
-// Supprimer une tâche
 if (isset($_GET['delete'])) {
-    $taskId = $_GET['delete'];
-    $stmt = $conn->prepare("DELETE FROM tasks WHERE id = ? AND user_id = ?");
-    $stmt->execute([$taskId, $userId]);
+    $task_id = $_GET['delete'];
+    $stmt = $conn->prepare("DELETE FROM tasks WHERE id = :id AND user_id = :user_id");
+    $stmt->execute(['id' => $task_id, 'user_id' => $user_id]);
+    header("Location: welcome.php");
+    exit();
 }
 
-// Marquer comme terminée
 if (isset($_GET['done'])) {
-    $taskId = $_GET['done'];
-    $stmt = $conn->prepare("UPDATE tasks SET is_done = 1 WHERE id = ? AND user_id = ?");
-    $stmt->execute([$taskId, $userId]);
+    $task_id = $_GET['done'];
+    $stmt = $conn->prepare("UPDATE tasks SET is_done = 1 WHERE id = :id AND user_id = :user_id");
+    $stmt->execute(['id' => $task_id, 'user_id' => $user_id]);
+    header("Location: welcome.php");
+    exit();
 }
 
-
-// Récupérer les tâches
-$stmt = $conn->prepare("SELECT * FROM tasks WHERE user_id = ? ORDER BY id DESC");
-$stmt->execute([$userId]);
-$tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$tasks = $conn->prepare("SELECT * FROM tasks WHERE user_id = :user_id");
+$tasks->execute(['user_id' => $user_id]);
+$tasks = $tasks->fetchAll();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tasks</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <title>Welcome</title>
+    <script>
+        function confirmAction(actionUrl, message) {
+            if (confirm(message)) {
+                window.location.href = actionUrl + '&confirm=yes';
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-2xl mx-auto py-8">
+        <h1 class="text-3xl font-bold mb-6 text-center">Welcome, <?= $_SESSION['fullName']; ?> 👋</h1>
 
-<div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
-    <h1 class="text-2xl font-bold mb-4">Bienvenue, <?php echo htmlspecialchars($fullName); ?>!</h1>
-    <h1 class="text-2xl font-bold mb-4">Ma liste de tâches</h1>
+        <form method="POST" class="mb-6 bg-white p-6 rounded shadow-md">
+            <textarea name="description" placeholder="New task..." class="w-full p-2 border rounded mb-4"></textarea>
+            <div class="flex items-center gap-4 mb-4">
+                <label class="text-sm font-medium">Criticity:</label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="red" class="hidden" required>
+                    <span class="w-6 h-6 inline-block rounded-full bg-red-500 border-2 border-white shadow-md"></span>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="yellow" class="hidden">
+                    <span class="w-6 h-6 inline-block rounded-full bg-yellow-400 border-2 border-white shadow-md"></span>
+                </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="color" value="green" class="hidden">
+                    <span class="w-6 h-6 inline-block rounded-full bg-green-500 border-2 border-white shadow-md"></span>
+                </label>
+            </div>
+            <button type="submit" name="add_task" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Add Task</button>
+        </form>
 
-    <!-- Ajouter une tâche -->
-    <form method="POST" class="space-y-4 mb-6">
-        <textarea name="description" class="w-full p-2 border rounded" placeholder="Ajouter une tâche..." required></textarea>
-        <button type="submit" name="add" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500">Ajouter</button>
-    </form>
-
-    <!-- Afficher les tâches -->
-    <ul class="space-y-3">
-        <?php foreach ($tasks as $task): ?>
-            <li class="flex justify-between items-center bg-gray-50 p-3 rounded border <?= $task['is_done'] ? 'line-through text-gray-400' : '' ?>">
-                <span><?= htmlspecialchars($task['description']) ?></span>
-                <div class="flex space-x-2">
-                    <?php if (!$task['is_done']): ?>
-                        <a href="?done=<?= $task['id'] ?>" class="text-green-600 hover:underline">✓</a>
-                    <?php endif; ?>
-                    <a href="?delete=<?= $task['id'] ?>" class="text-red-600 hover:underline">Supprimer</a>
+        <div class="space-y-4">
+            <?php foreach ($tasks as $task): ?>
+                <?php
+                    $colorClass = [
+                        'red' => 'bg-red-200',
+                        'yellow' => 'bg-yellow-200',
+                        'green' => 'bg-green-200'
+                    ];
+                    $taskColor = $colorClass[$task['color']] ?? 'bg-white';
+                ?>
+                <div class="flex items-center justify-between <?= $taskColor ?> p-4 rounded shadow-md">
+                    <div class="flex items-center gap-3">
+                        <p class="<?= $task['is_done'] ? 'line-through text-gray-400' : '' ?>">
+                            <?= htmlspecialchars($task['description']) ?>
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <?php if (!$task['is_done']): ?>
+                            <button onclick="confirmAction('?done=<?= $task['id'] ?>', 'Marquer cette tâche comme terminée ?')" class="text-green-600 hover:underline">Done</button>
+                        <?php endif; ?>
+                        <a href="edit.php?id=<?= $task['id'] ?>" class="text-yellow-500 hover:underline">Edit</a>
+                        <button onclick="confirmAction('?delete=<?= $task['id'] ?>', 'Voulez-vous vraiment supprimer cette tâche ?')" class="text-red-500 hover:underline">Delete</button>
+                    </div>
                 </div>
-            </li>
-        <?php endforeach; ?>
-    </ul>
-</div>
-
-
-
-<script>
-function openEditForm(id, description) {
-    document.getElementById('editTaskId').value = id;
-    document.getElementById('editDescription').value = description;
-    document.getElementById('editForm').classList.remove('hidden');
-}
-function closeEditForm() {
-    document.getElementById('editForm').classList.add('hidden');
-}
-</script>
-
+            <?php endforeach; ?>
+        </div>
+    </div>
 </body>
 </html>
