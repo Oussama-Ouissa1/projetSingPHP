@@ -57,8 +57,10 @@ $tasks = $tasks->fetchAll();
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="max-w-2xl mx-auto py-8">
-        <h1 class="text-3xl font-bold mb-6 text-center">Welcome, <?= $_SESSION['fullName']; ?> 👋</h1>
-
+        <div class="max-w-2xl mx-auto flex justify-between mb-6 pt-6">
+            <h1 class="text-3xl font-bold  text-center">Welcome, <?= $_SESSION['fullName']; ?> 👋</h1>
+            <a href="logout.php" class="text-white bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded font-semibold">Logout</a>
+        </div>
         <form method="POST" class="mb-6 bg-white p-6 rounded shadow-md">
             <textarea name="description" placeholder="New task..." class="w-full p-2 border rounded mb-4"></textarea>
             <div class="flex items-center gap-4 mb-4">
