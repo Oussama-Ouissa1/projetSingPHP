@@ -54,6 +54,9 @@ $tasks = $tasks->fetchAll();
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <title>Welcome</title>
 </head>
+<?php 
+    include "header.php";
+?>
 <body class="bg-gray-100 min-h-screen">
     <div class="max-w-2xl mx-auto py-8">
         <div class="flex justify-between items-center mb-6">
